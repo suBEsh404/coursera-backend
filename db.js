@@ -5,7 +5,8 @@ const user = new Schema({
     firstName : String,
     lastName : String,
     email : {type : String, unique:true},
-    password : String
+    password : String,
+    token : String
 })
 
 const admin = new Schema({
@@ -28,8 +29,6 @@ const course = new Schema({
 const purchase = new Schema({
     userID: Objectid,
     courseID: Objectid,
-    price: Number,
-    purchased: Boolean
 })
 
 const userModel = mongoose.model('users', user)

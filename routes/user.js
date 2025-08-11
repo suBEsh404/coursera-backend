@@ -5,7 +5,7 @@ const {z} = require('zod')
 mongoose.connect(process.env.mongoUrl);
 const jwt = require('jsonwebtoken');
 const { Router } = require ('express');
-const { userModel } = require('../db');
+const { userModel, purchaseModel, courseModel } = require('../db');
 const { userAuth } = require('../auth');
 
 const USER_JWT_SECRET = process.env.USER_JWT_SECRET;
@@ -14,7 +14,6 @@ const userRoute = Router();
 
 
 userRoute.post('/signup', async function(req, res){
-
     const dataValidation = z.object({
         firstName : z.string().min(3).max(50),
         lastName : z.string().min(3).max(50),
@@ -31,30 +30,27 @@ userRoute.post('/signup', async function(req, res){
         return
     }   
     const {firstName, lastName, email, password} = req.body;
-     let check = false
+    let check = false
+
+    const hashedPass = await bcrypt.hash(password, 5);
     try{
         await userModel.create({
             firstName : firstName,
             lastName : lastName,
             email : email,
-            password : password})
+            password : hashedPass})
             
-            console.log("done")
 }catch(e){
-   
     check = true
     res.status(403).json({
         message:"Error"
     })
 }
-
 if (!check){
        res.json({
         message : "User registered!"
     })
 }
- 
-
 });
 
 
@@ -64,10 +60,10 @@ userRoute.post('/login',async function(req, res){
 
     const checkId = await userModel.findOne({
         email,
-        password
     })
 
-    if(checkId){
+    const checkPass = bcrypt.compare(password, checkId.password);
+    if(checkId && checkPass ){
         const token = jwt.sign({
             id : checkId._id
         }, USER_JWT_SECRET)
@@ -75,17 +71,58 @@ userRoute.post('/login',async function(req, res){
         res.json({
             token : token
         })
+
+        await userModel.updateOne({
+            _id : checkId._id
+        },{
+            token : token
+        })
     }else{
         res.status(403).json({
-            message : "Loggin failed"
+            message : "Invalid Credentials"
         })
     }
 });
 
-
-userRoute.get('/purchases',userAuth, async function(req, res){
+userRoute.post('/purchase',userAuth, async function(req, res){
     const userID = req.id;
-     
+    const courseID = req.body.courseId;
+
+    try{
+        await purchaseModel.create({
+            userID,
+            courseID
+        })
+
+        res.json({
+            message : "Course Purchased"
+        })
+    }catch(e){
+        res.status(403).json({
+            message : "Error occurred"
+        })
+    }
+    
+});
+
+userRoute.get('/myCourses',userAuth, async function(req, res){
+    const userID = req.id;
+        const myCourses = await purchaseModel.find({userID})
+        const myCourseDetails = await courseModel.find({
+            _id : {$in : myCourses.map(x => x.courseID)}
+        })
+        res.json({
+            myCourses,
+            myCourseDetails
+        })
+
+        if(!myCourses){
+            res.status(404).json({
+                message : "Courses not found"
+            })
+        }
+
+    
     
 });
 

@@ -1,18 +1,15 @@
 const express = require('express')
-const { Router } = require ('express')
+const { Router } = require ('express');
+const { courseModel } = require('../db');
 
 const courseRoute = Router();
 
-courseRoute.post('/purchase', function(req, res){
-        res.json({
-        message : "check"
-    })
-});
 
+courseRoute.get('/courses',async function(req, res){
+    const allCourses = await courseModel.find({});
 
-courseRoute.get('/courses', function(req, res){
-        res.json({
-        message : "check"
+    res.json({
+        allCourses : allCourses
     })
 });
 

@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema
-const Objectid = Schema.ObjectId
 const bcrypt = require('bcrypt')
 const {z} = require('zod')
 mongoose.connect(process.env.mongoUrl);
